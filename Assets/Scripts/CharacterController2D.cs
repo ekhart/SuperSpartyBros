@@ -47,6 +47,7 @@ public class CharacterController2D : MonoBehaviour {
 	bool _facingRight = true;
 	bool _isGrounded = false;
 	bool _isRunning = false;
+	bool _canDoubleJump = false;
 
 	// store the layer the player is on (setup in Awake)
 	int _playerLayer;
@@ -106,19 +107,25 @@ public class CharacterController2D : MonoBehaviour {
 		// whatIsGround layer
 		_isGrounded = Physics2D.Linecast(_transform.position, groundCheck.position, whatIsGround);  
 
+		// allow double jump after grounded
+		if (_isGrounded) {
+			_canDoubleJump = _isGrounded;
+		}
+
 		// Set the grounded animation states
 		_animator.SetBool("Grounded", _isGrounded);
 
 		if(_isGrounded && Input.GetButtonDown("Jump")) // If grounded AND jump button pressed, then allow the player to jump
 		{
-			// reset current vertical motion to 0 prior to jump
-			_vy = 0f;
-			// add a force in the up direction
-			_rigidbody.AddForce (new Vector2 (0, jumpForce));
-			// play the jump sound
-			PlaySound(jumpSFX);
+			DoJump();
+		} 
+		else if (_canDoubleJump && Input.GetButtonDown("Jump"))  // if can double jump, then allow to double jump
+		{
+			DoJump();
+			// disable double jump after double jumping since you can only really do it once
+			_canDoubleJump = false;
 		}
-	
+
 		// If the player stops jumping mid jump and player is not yet falling
 		// then set the vertical velocity to 0 (he will start to fall from gravity)
 		if(Input.GetButtonUp("Jump") && _vy>0f)
@@ -133,6 +140,16 @@ public class CharacterController2D : MonoBehaviour {
 		// this allows the player to jump up through things on the platform layer
 		// NOTE: requires the platforms to be on a layer named "Platform"
 		Physics2D.IgnoreLayerCollision(_playerLayer, _platformLayer, (_vy > 0.0f)); 
+	}
+
+	// make the player jump
+	void DoJump() {
+		// reset current vertical motion to 0 prior to jump
+		_vy = 0f;
+		// add a force in the up direction
+		_rigidbody.AddForce (new Vector2 (0, jumpForce));
+		// play the jump sound
+		PlaySound(jumpSFX);
 	}
 
 	// Checking to see if the sprite should be flipped
